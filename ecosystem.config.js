@@ -10,7 +10,7 @@ module.exports = {
       name: "wechatautoReceipt",
       max_memory_restart: "1024M",
       log_date_format: "YYYY-MM-DD HH:mm:ss SSS",
-      script: "./bin/www",
+      script: "index.js",
       out_file: "/var/log/wechatautoReceipt/app.log",
       error_file: "/var/log/wechatautoReceipt/err.log",
       port: "80",
