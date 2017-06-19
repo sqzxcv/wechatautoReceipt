@@ -2,11 +2,18 @@ require('babel-register')
 const qrcode = require('qrcode-terminal')
 const fs = require('fs')
 const request = require('request')
-const xml2js = require('xml2js')
+const parseString = require('xml2js').parseString
 const Wechat = require('wechat4u')
+const communication = require('./communication')
+var mysql = require('mysql')
+var config = require('../config');
+var randomString = require('../common/common').randomString;
+var moment = require('moment');
+var wxbot = null;
 
 module.exports = function (bot) {
 
+    wxbot = bot;
     /**
      * 如何处理会话消息
     */
@@ -15,7 +22,7 @@ module.exports = function (bot) {
         /**
          * 获取消息时间
          */
-        console.log('----------${msg.getDisplayTime()}-----'+bot.contacts[msg.FromUserName].getDisplayName() +'-----')
+        console.log(`----------${msg.getDisplayTime()}-----${bot.contacts[msg.FromUserName].getDisplayName()}-----`)
         /**
          * 判断消息类型
          */
@@ -25,7 +32,8 @@ module.exports = function (bot) {
                  * 文本消息
                  */
                 console.log(msg.Content);
-                bot.sendMsg("test", msg.FromUserName);
+                // bot.sendMsg("test", msg.FromUserName);
+                sendCommunicationMsg(bot, msg);
                 break
             case bot.CONF.MSGTYPE_IMAGE:
                 /**
@@ -37,6 +45,7 @@ module.exports = function (bot) {
                 }).catch(err => {
                     bot.emit('error', err)
                 })
+                sendCommunicationMsg(bot, msg);
                 break
             case bot.CONF.MSGTYPE_VOICE:
                 /**
@@ -48,6 +57,7 @@ module.exports = function (bot) {
                 }).catch(err => {
                     bot.emit('error', err)
                 })
+                sendCommunicationMsg(bot, msg);
                 break
             case bot.CONF.MSGTYPE_EMOTICON:
                 /**
@@ -59,6 +69,7 @@ module.exports = function (bot) {
                 }).catch(err => {
                     bot.emit('error', err)
                 })
+                sendCommunicationMsg(bot, msg);
                 break
             case bot.CONF.MSGTYPE_VIDEO:
             case bot.CONF.MSGTYPE_MICROVIDEO:
@@ -71,6 +82,7 @@ module.exports = function (bot) {
                 }).catch(err => {
                     bot.emit('error', err)
                 })
+                sendCommunicationMsg(bot, msg);
                 break
             case bot.CONF.MSGTYPE_APP:
                 if (msg.AppMsgType == 6) {
@@ -84,6 +96,7 @@ module.exports = function (bot) {
                     }).catch(err => {
                         bot.emit('error', err)
                     })
+                    sendCommunicationMsg(bot, msg);
                 }
                 break
             default:
@@ -103,8 +116,9 @@ module.exports = function (bot) {
      * 如何处理转账消息
      */
     bot.on('message', msg => {
-        if (msg.MsgType == bot.CONF.MSGTYPE_APP && msg.AppMsgType == bot.CONF.APPMSGTYPE_TRANSFERS) {
+        if (msg.isSendBySelf == false && msg.MsgType == bot.CONF.MSGTYPE_APP && msg.AppMsgType == bot.CONF.APPMSGTYPE_TRANSFERS) {
             // 转账
+            dealTransfer(bot, msg);
         }
     })
     /**
@@ -151,4 +165,178 @@ module.exports = function (bot) {
     //         bot.emit('error', err)
     //     })
     // })
+}
+
+
+function sendCommunicationMsg(bot, msg) {
+
+    if (msg.isSendBySelf == true) {
+        return;
+    }
+    var pool = mysql.createPool({
+        host: config['dbhost'],
+        user: config['dbuser'],
+        password: config['dbpwd'],
+        database: "BB",
+        connectionLimit: 100,
+        port: "3306",
+        waitForConnections: false
+    });
+
+    var df = moment();
+    pool.getConnection(function (err, connection) {
+
+        if (!err) {
+            connection.query("insert into wxmsg(content,fromusername,createtime,MsgType) values(?,?,?,?)", [msg.Content, msg.FromUserName, parseInt(msg.CreateTime), parseInt(msg.MsgType)], function (err, results, fields) {
+
+                connection.release();
+                if (err) {
+                    console.error(err);
+                }
+                bot.sendMsg(communication(msg.FromUserName, "01"), msg.FromUserName)
+            });
+        } else {
+            console.error(err);
+        }
+    });
+}
+
+function dealTransfer(bot, msg) {
+
+    parseString(msg.Content, function (err, result) {
+        console.dir(JSON.stringify(result));
+        //转账金额 result.msg.appmsg[0].wcpayinfo[0].feedesc[0] = "￥0.10"
+        //转账单号:result.msg.appmsg[0].wcpayinfo[0].transferid[0] = ""
+        var transferid = result.msg.appmsg[0].wcpayinfo[0].transferid[0];
+        var transferamount = parseFloat(result.msg.appmsg[0].wcpayinfo[0].feedesc[0].replace(/￥/g, ""));
+        var des = result.msg.appmsg[0].des[0];
+
+        notifySupportWithInfo(des);
+        console.log(`********转账记录*******已经收到用户转账.转账信息如下:\n微信昵称:${bot.contacts[msg.FromUserName].getDisplayName()}\n转账时间:${msg.getDisplayTime()}\n 转账金额:${transferamount}\n转账详细信息如下:\n${JSON.stringify(result)}`)
+
+        var pool = mysql.createPool({
+            host: config['dbhost'],
+            user: config['dbuser'],
+            password: config['dbpwd'],
+            database: "BB",
+            connectionLimit: 100,
+            port: "3306",
+            waitForConnections: false
+        });
+
+        pool.getConnection(function (err, connection) {
+
+            if (!err) {
+                connection.query("select * from wxtranscation where transferid=?", [transferid], function (err, results, fields) {
+
+                    if (err) {
+
+                        bot.sendMsg("正在忙,请稍后...", msg.FromUserName);
+                        notifySupportWithInfo(`[紧急]查询转账记录是否存在-失败,详细信息:{${des}}.  transferid=${transferid}`)
+                        return;
+                    }
+                    if (results.length != 0) {
+                        console.log("同一个转账记录用户重复发送了")
+                        bot.sendMsg("正在处理,请稍后...", msg.FromUserName);
+                        return;
+                    } else {
+                        //新的转账记录,为用户创建账户,或者充值.
+                        connection.query("insert into wxtranscation(transferid,fromusername,createtime,transferamount) values(?,?,?,?)", [transferid, msg.FromUserName, parseInt(msg.CreateTime), transferamount], function (err, results, fields) {
+                            if (err) {
+                                console.error(err);
+                                console.warn(`********wxtranscation*******已经收到用户转账,但是转账记录存入数据库时失败.转账信息如下:\n微信昵称:${bot.contacts[msg.FromUserName].getDisplayName()}\n转账时间:${msg.getDisplayTime()}\n 转账金额:${transferamount}\n转账详细信息如下:\n${JSON.stringify(result)}`)
+
+                            }
+                        });
+
+                        //查询该微信用户是否已经绑定用户,如果绑定更新账户信息,否则新建用户
+                        connection.query("select * from user where wxusername=?", [msg.FromUserName], function (err, results, fields) {
+
+                            if (err) {
+                                console.error(err);
+                                bot.sendMsg("正在忙,请稍后", msg.FromUserName);
+                                notifySupportWithInfo(`[紧急]查询该微信用户是否已经绑定账户-失败,详细信息:{${des}}.  transferid=${transferid}`)
+                                return;
+                            }
+                            var duration = 0;
+                            if (transferamount < 19.9) {
+
+                                bot.sendMsg("您支付的净额不够,请重新支付,至少支付19.9元",msg.FromUserName)
+                                return;
+                            } else if (transferamount >= 19.9 && transferamount < 58) {
+                                duration = 7;
+                            } else if (transferamount >= 58 && transferamount < 258) {
+                                duration = 30;
+                            } else if (transferamount >= 258) {
+                                duration = 365;
+                            }
+                            if (results.length != 0) {
+
+                                var expirestime = moment.unix(results[0]['expirestime']).add(duration, "days").unix();
+                                connection.query("update user set expirestime=? where uid=?", [expirestime, results[0]['uid']], function (err, updateResults, fields) {
+
+                                    bot.sendMsg(`充值成功`, msg.FromUserName);
+                                    bot.sendMsg(`您当前账户:${results[0]['username']},到期时间:${moment.unix(results[0]['expirestime']).format('YYYY-M-D')}.如果在使用过程中有任何问题,随时联系我们.`, msg.FromUserName)
+                                });
+
+                            } else {
+
+                                genUsername(6, function (username) {
+
+                                    var pwd = randomString(6);
+                                    var expirestime = moment().add(duration, "days").unix();
+                                    connection.query("insert into user(username,pwd,expirestime,wxusername,wxnickname) values(?,?,?,?,?)", [username, pwd, expirestime, msg.FromUserName, bot.contacts[msg.FromUserName].getDisplayName()], function (err, results, fields) {
+
+                                        connection.release();
+                                        if (err == null) {
+
+                                            //bot.sendMsg(communication(msg.FromUserName, "01"), msg.FromUserName)
+                                            bot.sendMsg(`账户创建成功`, msg.FromUserName);
+                                            bot.sendMsg(`您当前账户:${username},密码:${pwd},到期时间:${moment.unix(expirestime).format('YYYY-M-D')}.如果在使用过程中有任何问题,随时联系我们.`, msg.FromUserName)
+                                        } else {
+                                            bot.sendMsg("正在忙,请稍后", msg.FromUserName);
+                                            notifySupportWithInfo(`[紧急]创建账户-失败,详细信息:{${des}}.  transferid=${transferid}`)
+                                        }
+                                    });
+                                });
+                            }
+                        });
+                        //创建新用户
+                        function genUsername(len, usernameCallback) {
+
+                            username = randomString(len);
+                            //查询是否存在同名 user
+                            connection.query("select * from user where username=?", [username], function (err, results, fields) {
+
+                                if (err) {
+                                    console.error(err);
+                                    bot.sendMsg("正在忙,请稍后", msg.FromUserName);
+                                    notifySupportWithInfo(`[紧急]创建账户-失败,详细信息:{${des}}.  transferid=${transferid}`)
+
+                                    return;
+                                }
+                                if (results.length != 0) {
+
+                                    genUsername(len++, usernameCallback);
+                                } else {
+                                    usernameCallback(username);
+                                }
+                            });
+                        }
+                    }
+                });
+            } else {
+                console.error(err);
+                console.warn(`********wxtranscation*******已经收到用户转账,但是转账记录存入数据库时失败.转账信息如下:\n微信昵称:${bot.contacts[msg.FromUserName].getDisplayName()}\n转账时间:${msg.getDisplayTime()}\n 转账金额:${transferamount}\n转账详细信息如下:\n${JSON.stringify(result)}`)
+                bot.sendMsg("正在忙,请稍后", msg.FromUserName);
+                notifySupportWithInfo(`[紧急]获取数据库链接-失败,详细信息:{${des}}.  transferid=${transferid}`)
+
+            }
+        });
+    });
+}
+
+function notifySupportWithInfo(msg) {
+
+    wxbot.sendMsg(msg, "@e5588d1d843d690a496dcb16809f7b6d");
 }

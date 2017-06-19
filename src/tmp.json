@@ -1,0 +1,67 @@
+{
+    "msg": {
+        "appmsg": [
+            {
+                "$": {
+                    "appid": "",
+                    "sdkver": ""
+                },
+                "title": [
+                    "微信转账"
+                ],
+                "des": [
+                    "木糖向你转账0.10元。如需收钱，请点此升级至最新版本"
+                ],
+                "action": [
+                    ""
+                ],
+                "type": [
+                    "2000"
+                ],
+                "content": [
+                    ""
+                ],
+                "url": [
+                    "https://support.weixin.qq.com/cgi-bin/mmsupport-bin/readtemplate?t=page/common_page__upgrade&amp;text=text001&amp;btn_text=btn_text_0"
+                ],
+                "thumburl": [
+                    "https://support.weixin.qq.com/cgi-bin/mmsupport-bin/readtemplate?t=page/common_page__upgrade&amp;text=text001&amp;btn_text=btn_text_0"
+                ],
+                "lowurl": [
+                    ""
+                ],
+                "extinfo": [
+                    ""
+                ],
+                "wcpayinfo": [
+                    {
+                        "paysubtype": [
+                            "1"
+                        ],
+                        "feedesc": [
+                            "￥0.10"
+                        ],
+                        "transcationid": [
+                            "100005020117061400024021413218147744"
+                        ],
+                        "transferid": [
+                            "1000050201201706141700173828159"
+                        ],
+                        "invalidtime": [
+                            "1497503690"
+                        ],
+                        "begintransfertime": [
+                            "1497417290"
+                        ],
+                        "effectivedate": [
+                            "1"
+                        ],
+                        "pay_memo": [
+                            ""
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
