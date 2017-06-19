@@ -17,6 +17,7 @@
     "mysql": "^2.13.0",
     "qrcode-terminal": "^0.11.0",
     "serve-favicon": "~2.4.2",
+    "wechat4u": "^0.7.4",
     "xml2js": "^0.4.17"
   }
 }
