@@ -2,7 +2,7 @@
 require('babel-register')
 const qrcode = require('qrcode-terminal')
 const fs = require('fs')
-const request = require('request')
+// const request = require('request')
 const xml2js = require('xml2js')
 const Wechat = require('wechat4u')
 const handleMessage = require('./src/handleMessage')
