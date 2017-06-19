@@ -139,6 +139,10 @@ module.exports = function (bot) {
             bot.verifyUser(msg.RecommendInfo.UserName, msg.RecommendInfo.Ticket)
                 .then(res => {
                     console.log(`通过了 ${bot.Contact.getDisplayName(msg.RecommendInfo)} 好友请求`)
+                    bot.sendMsg(`欢迎${bot.Contact.getDisplayName(msg.RecommendInfo)}加入爱吧,很高兴认识您,我是机器人雯雯,以后您有任何问题都可以联系我哟`, msg.FromUserName);
+                    var msgStr = `雯雯:现有爱吧各 VIP 套餐如下:年卡(365天)--258元,包月卡(30天)--58元,在您转账成功后账号将会发给您,比如:您转账58元,稍后将会自动为您创建或者充值 VIP 包月套餐账户`;
+                    bot.sendMsg(msgStr, msg.FromUserName);
+                    bot.sendMsg(`雯雯保证账户长期有效,如果您有些疑虑,也可以先用体验卡,公司先推出7天VIP 体验卡,只需19.9元哟,一顿饭,一包烟的钱可以免费体验7天`, msg.FromUserName);
                 })
                 .catch(err => {
                     bot.emit('error', err)
@@ -193,7 +197,10 @@ function sendCommunicationMsg(bot, msg) {
                 if (err) {
                     console.error(err);
                 }
-                bot.sendMsg(communication(msg.FromUserName, "01"), msg.FromUserName)
+                bot.sendMsg(`欢迎${bot.contacts[msg.FromUserName].getDisplayName()}回来,雯雯在这里等你好久咯`, msg.FromUserName);
+                var msgStr = `雯雯:现有爱吧各 VIP 套餐如下:年卡(365天)--258元,包月卡(30天)--58元,在您转账成功后账号将会发给您,比如:您转账58元,稍后将会自动为您创建或者充值 VIP 包月套餐账户`;
+                bot.sendMsg(msgStr, msg.FromUserName);
+                bot.sendMsg(`雯雯保证账户长期有效,如果您有些疑虑,也可以先用体验卡,公司先推出7天VIP 体验卡,只需19.9元哟,一顿饭,一包烟的钱可以免费体验7天`, msg.FromUserName);
             });
         } else {
             console.error(err);
@@ -261,7 +268,7 @@ function dealTransfer(bot, msg) {
                             var duration = 0;
                             if (transferamount < 19.9) {
 
-                                bot.sendMsg("您支付的净额不够,请重新支付,至少支付19.9元",msg.FromUserName)
+                                bot.sendMsg("您支付的净额不够,请重新支付,至少支付19.9元", msg.FromUserName)
                                 return;
                             } else if (transferamount >= 19.9 && transferamount < 58) {
                                 duration = 7;
@@ -290,7 +297,6 @@ function dealTransfer(bot, msg) {
                                         connection.release();
                                         if (err == null) {
 
-                                            //bot.sendMsg(communication(msg.FromUserName, "01"), msg.FromUserName)
                                             bot.sendMsg(`账户创建成功`, msg.FromUserName);
                                             bot.sendMsg(`您当前账户:${username},密码:${pwd},到期时间:${moment.unix(expirestime).format('YYYY-M-D')}.如果在使用过程中有任何问题,随时联系我们.`, msg.FromUserName)
                                         } else {
