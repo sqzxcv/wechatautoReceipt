@@ -30,7 +30,7 @@ module.exports = {
   deploy: {
     production: {
       user: 'root',
-      host: '172.104.91.83',
+      host: '116.62.195.14',
       ref: 'origin/master',
       repo: 'git@github.com:sqzxcv/wechatautoReceipt.git',
       path: '/var/www/wechatautoReceipt',
@@ -38,7 +38,7 @@ module.exports = {
     },
     dev: {
       user: 'root',
-      host: '172.104.91.83',
+      host: '116.62.195.14',
       ref: 'origin/master',
       repo: 'git@github.com:sqzxcv/videoservice.git',
       path: '/var/www/development',
