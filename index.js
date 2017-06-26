@@ -58,6 +58,7 @@ bot.on('logout', () => {
   console.log('登出成功')
   // 清除数据
   fs.unlinkSync('./sync-data.json')
+  //todo 事务处理完后才能退出
   process.exit();
 })
 /**
