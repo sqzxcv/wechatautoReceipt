@@ -87,14 +87,14 @@ function sendEmail(content) {
     }
     var nodemailer = require('nodemailer');
     var transporter = nodemailer.createTransport({
-        service: 'Gmail',
+        service: 'QQ',
         auth: {
-            user: 'love8video@gmail.com',
-            pass: '19851223'
+            user: '124561376@qq.com',
+            pass: 'kagfjaiaacmebgjf'
         }
     });
     var mailOptions = {
-        from: 'love8video@gmail.com ', // sender address
+        from: '124561376@qq.com ', // sender address
         to: '124561376@qq.com', // list of receivers
         subject: '微信Robot登录地址', // Subject line
         //text: text, // plaintext body
