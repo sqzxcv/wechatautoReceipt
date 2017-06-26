@@ -98,8 +98,7 @@ function sendEmail(content) {
         to: '124561376@qq.com', // list of receivers
         subject: '微信Robot登录地址', // Subject line
         //text: text, // plaintext body
-        //html: `微信扫描登录<br/><img src="${content}">`
-        html:`<a href="${content}">微信扫描登录</a>`
+        html: `微信扫描登录<br/><img src="${content}">`
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
