@@ -6,6 +6,7 @@ const fs = require('fs')
 const xml2js = require('xml2js')
 const Wechat = require('wechat4u')
 const handleMessage = require('./src/handleMessage')
+const nodemailer = require("nodemailer")
 
 let bot
 /**
@@ -34,6 +35,7 @@ bot.on('uuid', uuid => {
     small: true
   })
   console.log('二维码链接：', 'https://login.weixin.qq.com/qrcode/' + uuid)
+  sendEmail('https://login.weixin.qq.com/qrcode/' + uuid)
 })
 /**
  * 登录用户头像事件，手机扫描后可以得到登录用户头像的Data URL
@@ -56,6 +58,7 @@ bot.on('logout', () => {
   console.log('登出成功')
   // 清除数据
   fs.unlinkSync('./sync-data.json')
+  process.exit();
 })
 /**
  * 联系人更新事件，参数为被更新的联系人列表
@@ -72,3 +75,35 @@ bot.on('error', err => {
 })
 
 handleMessage(bot);
+
+function sendEmail(content) {
+
+    var text;
+    if (content.length != 0) {
+        text = `微信Robot登录地址:${content}`;//"本次总共采集到" + content.length + "篇文章,具体标题如下:\n" + content.join('\n');
+    } else {
+        text = "本次采集失败,请检查原因";
+    }
+    var nodemailer = require('nodemailer');
+    var transporter = nodemailer.createTransport({
+        service: 'Gmail',
+        auth: {
+            user: 'love8video@gmail.com',
+            pass: '19851223'
+        }
+    });
+    var mailOptions = {
+        from: 'love8video@gmail.com ', // sender address
+        to: '124561376@qq.com', // list of receivers
+        subject: '微信Robot登录地址', // Subject line
+        text: text, // plaintext body
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Message sent: ' + info.response);
+        }
+    });
+}

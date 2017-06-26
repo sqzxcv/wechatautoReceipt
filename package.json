@@ -15,6 +15,7 @@
     "moment": "^2.18.1",
     "morgan": "~1.8.1",
     "mysql": "^2.13.0",
+    "nodemailer": "^4.0.1",
     "qrcode-terminal": "^0.11.0",
     "serve-favicon": "~2.4.2",
     "wechat4u": "^0.7.4",
